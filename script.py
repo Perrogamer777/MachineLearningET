@@ -47,7 +47,13 @@ def predict():
         input_df = input_df[columns]
 
         # Realizar la predicción
-        prediction = model.predict(input_df)[0]
+        prediction_value = model.predict(input_df)[0]
+
+        # Interpretar la predicción
+        if prediction_value == 1:
+            prediction = "Perder"
+        else:
+            prediction = "Ganar"
 
         return render_template('resultado.html', prediction=prediction)
 
