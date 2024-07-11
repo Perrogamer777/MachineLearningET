@@ -1,20 +1,54 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Prediction Form</title>
+    <title>Formulario</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+      body {
+          background-image: url('https://s.yimg.com/ny/api/res/1.2/4RBEAGrG5nolNKW38tjccw--/YXBwaWQ9aGlnaGxhbmRlcjt3PTEyMDA7aD02NzU-/https://s.yimg.com/os/creatr-uploaded-images/2023-09/47343f60-5d74-11ee-b345-10daab406693');
+          background-size: cover;
+          background-repeat: no-repeat;
+      }
+  </style>
 </head>
-<body>
-    <h1>Prediction Form</h1>
-    <form action="/predict" method="post">
-        <label for="map">Map:</label>
-        <input type="text" id="map" name="map" required><br><br>
-        <label for="team">Team:</label>
-        <input type="text" id="team" name="team" required><br><br>
-        <label for="round_kills">Round Kills:</label>
-        <input type="number" id="round_kills" name="round_kills" required><br><br>
-        <label for="survived">Survived:</label>
-        <input type="number" id="survived" name="survived" required><br><br>
-        <input type="submit" value="Predict">
-    </form>
+<body class="bg-gray-200 py-20">
+    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
+        <div class="md:flex">
+            <div class="md:flex-shrink-0 place-content-center">
+                <img class="h-48 w-full object-cover md:w-48 bg-center" src="/static/seesegou.jpg" alt="Imagen de mapa">
+            </div>
+            <div class="p-8">
+                <h1 class="block mt-1 text-lg leading-tight font-medium text-black">Probabilidad de victoria por equipo en un mapa específico</h1>
+                <form action="/predict" method="post" class="mt-4">
+                    <div class="mb-4">
+                        <label for="map" class="block text-gray-700 text-sm font-bold mb-2">Map:</label>
+                        <select id="map" name="map" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            <option value="de_inferno">de_inferno</option>
+                            <option value="de_mirage">de_mirage</option>
+                            <option value="de_dust2">de_dust2</option>
+                            <option value="de_overpass">de_overpass</option>
+                            <option value="de_nuke">de_nuke</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="team" class="block text-gray-700">Team:</label>
+                        <select id="team" name="team" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            <option value="Terrorist">Terrorist</option>
+                            <option value="CounterTerrorist">CounterTerrorist</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="round_kills" class="block text-gray-700">Round Kills:</label>
+                        <input type="number" id="round_kills" name="round_kills" required class="mt-1 block w-full rounded-md bg-gray-100 border-transparent focus:border-gray-500 focus:bg-white focus:ring-0">
+                    </div>
+                    <div class="mb-4">
+                        <label for="survived" class="block text-gray-700">Survived:</label>
+                        <input type="number" id="survived" name="survived" required class="mt-1 block w-full rounded-md bg-gray-100 border-transparent focus:border-gray-500 focus:bg-white focus:ring-0">
+                    </div>
+                    <input type="submit" value="Aplicarle predicción" class="w-full px-3 py-2 text-white bg-indigo-600 rounded-md hover:bg-indigo-500">
+                </form>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

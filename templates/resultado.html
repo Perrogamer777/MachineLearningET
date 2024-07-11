@@ -1,12 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>Resultado :v</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-image: url('https://hardzone.es/app/uploads/2018/04/La-comunidad-de-CS-GO-enfurecida-por-la-%C3%BAltima-restricci%C3%B3n-en-la-venta-de-skins.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
+    </style>
 </head>
-<body>
-    <h1>Resultado de la predicción</h1>
-    <p>La predicción para round winner is: {{ prediction }}</p>
-    <a href="/">Otra predict de clash royale</a>
+<body class="bg-gray-200 py-20">
+    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl p-8">
+        <h1 class="text-2xl font-bold mb-4">Resultado de la predicción</h1>
+        <p class="text-lg mb-4">La predicción es: <span class="font-bold">{{ prediction }}</span></p>
+        <a href="/" class="text-indigo-600 hover:text-indigo-500">Otra predict de clash royale</a>
+    </div>
 </body>
 </html>
+

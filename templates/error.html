@@ -2,11 +2,22 @@
 <html>
 <head>
     <title>Error</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-image: url('https://es.egamersworld.com/_next/image?url=https%3A%2F%2Fegamersworld.com%2Fuploads%2Fblog%2F1685723656755.jpg&w=1920&q=75');
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
+    </style>
 </head>
-<body>
-    <h1>Error</h1>
-    <p>Ha ocurrido un error con los datos</p>
-    <p>{{ error }}</p>
-    <a href="/">Otra predict de clash royale</a>
+<body class="bg-gray-200 py-20">
+    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl p-8">
+        <h1 class="text-2xl font-bold text-red-600 mb-4">Error</h1>
+        <p class="text-lg mb-4">Ha ocurrido un error con los datos</p>
+        <p class="text-lg mb-4 text-red-500">{{ error }}</p>
+        <a href="/" class="text-indigo-600 hover:text-indigo-500">Otra predict de clash royale</a>
+    </div>
 </body>
+
 </html>
