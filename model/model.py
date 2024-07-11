@@ -1,50 +1,67 @@
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import pickle
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
-# Limpieza de datos numéricos 
-def limpiar(column):
-    return pd.to_numeric(column.str.replace('.', '', regex=True), errors='coerce')
+pickle_path = 'checkpoints/dataframe.pkl'
+with open(pickle_path, 'rb') as file:
+    df = pickle.load(file)
 
-# Seleccionar las columnas relevantes
-datosUtilizar = df_filtrado[['Map', 'Team', 'RoundWinner']].copy()
+try:
+    # Inspeccionar los nombres de las columnas
+    print("Columnas disponibles en el DataFrame:")
+    print(df.columns)
 
-# Convertir la columna 'RoundWinner' en valores binarios 
-datosUtilizar['RoundWinner'] = datosUtilizar['RoundWinner'].astype(int)
+    # Seleccionar las columnas relevantes incluyendo 'RoundKills' y 'Survived'
+    datosUtilizar = df[['Map', 'Team', 'RoundWinner', 'RoundKills', 'Survived']].copy()
 
-# Convertir columnas categóricas en variables dummy
-data_dummies = pd.get_dummies(datosUtilizar, columns=['Map', 'Team'], drop_first=True)
+    # Convertir las columnas 'RoundWinner' y 'Survived' en valores binarios (0 y 1)
+    datosUtilizar['RoundWinner'] = datosUtilizar['RoundWinner'].astype(int)
+    datosUtilizar['Survived'] = datosUtilizar['Survived'].astype(int)
 
-# Separar características y variable objetivo
-X = data_dummies.drop('RoundWinner', axis=1)
-y = data_dummies['RoundWinner']
+    # Convertir columnas categóricas en variables dummy
+    data_dummies = pd.get_dummies(datosUtilizar, columns=['Map', 'Team'], drop_first=True)
 
-# Dividir los datos en conjuntos de entrenamiento y prueba
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    # Verificar el balance de clases
+    class_counts = data_dummies['RoundWinner'].value_counts()
+    print("Distribución de clases:\n", class_counts)
 
-# Ajustar el modelo de regresión logística
-model = LogisticRegression(max_iter=1000)
-model.fit(X_train, y_train)
+    # Separar características y variable objetivo
+    X = data_dummies.drop('RoundWinner', axis=1)
+    y = data_dummies['RoundWinner']
 
-# predicción
-y_pred = model.predict(X_test)
-y_pred_proba = model.predict_proba(X_test)[:, 1]
+    # Dividir los datos en conjuntos de entrenamiento y prueba
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-#evaluar modelo
-accuracy = accuracy_score(y_test, y_pred)
-conf_matrix = confusion_matrix(y_test, y_pred)
-class_report = classification_report(y_test, y_pred)
+    # Crear y entrenar el modelo de árbol de decisiones
+    tree_model = DecisionTreeClassifier(random_state=42)
+    tree_model.fit(X_train, y_train)
 
-print(f'Precisión: {accuracy}')
-print(f'Matriz de confusión: \n{conf_matrix}')
-print(f'Reporte de clasificación: \n{class_report}')
+    # Realizar predicciones
+    y_pred = tree_model.predict(X_test)
 
+    # Evaluación del modelo
+    accuracy = accuracy_score(y_test, y_pred)
+    conf_matrix = confusion_matrix(y_test, y_pred)
+    class_report = classification_report(y_test, y_pred)
 
-# Guardar el modelo y el scaler en archivos pickle
-with open('checkpoints/logistic_model.pkl', 'wb') as model_file:
-    pickle.dump(model, model_file)
+    print("Precisión del modelo de Árbol de Decisiones:", accuracy)
+    print("Matriz de confusión:\n", conf_matrix)
+    print("Reporte de clasificación:\n", class_report)
 
+    # Guardar el modelo y los nombres de las columnas en archivos pickle
+    with open('checkpoints/tree_model.pkl', 'wb') as model_file:
+        pickle.dump(tree_model, model_file)
+        
+    with open('checkpoints/columns.pkl', 'wb') as columns_file:
+        pickle.dump(X_train.columns.tolist(), columns_file)
 
-print("Modelo y scaler guardados en archivos pickle con éxito.")
+    print("todo salió de maravilla perro B)")
+
+except pd.errors.ParserError as e:
+    print("Error al analizar el archivo CSV:", e)
+except KeyError as e:
+    print("Error de clave:", e)
+except Exception as e:
+    print("Ocurrió un error:", e)

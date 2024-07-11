@@ -1,102 +1,105 @@
 import pandas as pd
+import numpy as np
 
 data_path = 'dataset/Anexo_ET_demo_round_traces.csv'
 df = pd.read_csv(data_path, sep=';')
 
+## Se selecciona las partidas que tengan más de 30 rondas y posteriormente se eliminan.
+rounds_mayores_a_30 = df.loc[df['RoundId'] > 30]
+df = df.drop(rounds_mayores_a_30.index)
+round_por_match = df.groupby('MatchId')['RoundId'].max().reset_index().sort_values(by='RoundId')
+max_rounds = round_por_match['RoundId']
 
-#Modificación de equipo por team id
+## Se elimina la columna AbnormalMatch por su nulo aporte
+df = df.drop('AbnormalMatch', axis=1)
+##Se convierte la columna RoundWinner en valores binarios
+df['RoundWinner'] = df['RoundWinner'].astype(bool)
+
+## Se modifica la columna 'Team' en función de la ronda y el equipo interno para asignar los valores "Terrorist" y "CounterTerrorist" según el momento del juego
 for partida in df['MatchId'].unique():
-  team1 = df[(df['RoundId']==1) & (df['InternalTeamId']==1) & (df['MatchId']==partida)]['Team'].unique()[0]
-  team2 = df[(df['RoundId']==1) & (df['InternalTeamId']==2) & (df['MatchId']==partida)]['Team'].unique()[0]
-  rondas = df[(df['MatchId']==partida)]['RoundId'].unique()
-  for ronda in rondas:
-    if ronda<16:
-      df.loc[(df['RoundId']==ronda) & (df['InternalTeamId']==1) & (df['MatchId']==partida), 'Team'] = team1
-      df.loc[(df['RoundId']==ronda) & (df['InternalTeamId']==2) & (df['MatchId']==partida), 'Team'] = team2
-    elif ronda>=16:
-      df.loc[(df['RoundId']==ronda) & (df['InternalTeamId']==1) & (df['MatchId']==partida), 'Team'] = team2
-      df.loc[(df['RoundId']==ronda) & (df['InternalTeamId']==2) & (df['MatchId']==partida), 'Team'] = team1
+    team1 = df[(df['RoundId'] == 1) & (df['InternalTeamId'] == 1) & (df['MatchId'] == partida)]['Team'].unique()[0]
+    team2 = df[(df['RoundId'] == 1) & (df['InternalTeamId'] == 2) & (df['MatchId'] == partida)]['Team'].unique()[0]
+    rondas = df[(df['MatchId'] == partida)]['RoundId'].unique()
+    for ronda in rondas:
+        if ronda < 16:
+            df.loc[(df['RoundId'] == ronda) & (df['InternalTeamId'] == 1) & (df['MatchId'] == partida), 'Team'] = 'Terrorist'
+            df.loc[(df['RoundId'] == ronda) & (df['InternalTeamId'] == 2) & (df['MatchId'] == partida), 'Team'] = 'CounterTerrorist'
+        else:
+            df.loc[(df['RoundId'] == ronda) & (df['InternalTeamId'] == 1) & (df['MatchId'] == partida), 'Team'] = 'CounterTerrorist'
+            df.loc[(df['RoundId'] == ronda) & (df['InternalTeamId'] == 2) & (df['MatchId'] == partida), 'Team'] = 'Terrorist'
 
 
+# Indicamos qué equipo ganó la partida y el recuento de partidas ganadas por cada equipo y de partidas empatadas.
+partidas_ganadas_equipo1 = 0
+partidas_ganadas_equipo2 = 0
+partidas_empatadas = 0
 
-#Cambio de datos: Cambiar de False4 en RoundWinner a False, agregar False a MatchWinner, ya que en contexto aplica
-df.loc[29,'MatchWinner'] = 'False'
-df.loc[29,'RoundWinner'] = 'False'
 
-#Se eliminará columna Unnamed: 0, ya que solo contiene las ID de las filas
-#Se eliminará AbnormalMatch, ya que contiene solamente valores False
-df.drop(columns=['Unnamed: 0'], inplace=True)
-df.drop(columns=['AbnormalMatch'], inplace=True)
-
-#Eliminación de partidas que tengan menos de 16 rondas
 for partida in df['MatchId'].unique():
-  if df[df['MatchId']==partida]['RoundId'].unique().size<16:
-    df.drop(df[df['MatchId']==partida].index, inplace=True)
+    rondas = df[(df['MatchId'] == partida)]['RoundId'].unique()
+    equipo1_rondas_ganadas = len(df[(df['MatchId'] == partida) & (df['InternalTeamId'] == 1) & (df['RoundWinner'] == True)])
+    equipo2_rondas_ganadas = len(df[(df['MatchId'] == partida) & (df['InternalTeamId'] == 2) & (df['RoundWinner'] == True)])
+    if equipo1_rondas_ganadas > equipo2_rondas_ganadas:
+        df.loc[(df['MatchId'] == partida) & (df['InternalTeamId'] == 1), 'MatchWinner'] = True
+        df.loc[(df['MatchId'] == partida) & (df['InternalTeamId'] == 2), 'MatchWinner'] = False
+        partidas_ganadas_equipo1 += 1
+    elif equipo1_rondas_ganadas < equipo2_rondas_ganadas:
+        df.loc[(df['MatchId'] == partida) & (df['InternalTeamId'] == 1), 'MatchWinner'] = False
+        df.loc[(df['MatchId'] == partida) & (df['InternalTeamId'] == 2), 'MatchWinner'] = True
+        partidas_ganadas_equipo2 += 1
+    else:
+        # En caso de empate en rondas ganadas, dejar datos como nan
+        df.loc[df['MatchId'] == partida, 'MatchWinner'] = np.nan
+        partidas_empatadas += 1
 
-#Eliminación de filas que corresponda tengan más de 31 rondas
-for partida in df[df['RoundId']>31]['MatchId'].unique():
-  df.drop(df[df['MatchId']==partida].index, inplace=True)
-
-
-#Eliminación de partidas que tengan más o menos jugadores en un equipo
-for partida in df['MatchId'].unique():
-  cant_t1 = df[(df['InternalTeamId']==1) & (df['MatchId']==partida)]['Map'].count()
-  cant_t2 = df[(df['InternalTeamId']==2) & (df['MatchId']==partida)]['Map'].count()
-  if(cant_t1-cant_t2!=0):
-    df.drop(df[df['MatchId']==partida].index, inplace=True)
-
-#Dada la naturaleza de los datos, y dado que en cada columna hay datos str y bool,
-#se cambiará ambas filas (match y round winner) a str
-
-df['MatchWinner'] = df['MatchWinner'].astype(str)
-df['RoundWinner'] = df['RoundWinner'].astype(str)
-
-#Obtención de un valor visible para las columnas de armas
-armas = ['PrimaryAssaultRifle', 'PrimarySniperRifle','PrimaryHeavy', 'PrimarySMG', 'PrimaryPistol']
-for tipo_arma in armas:
-  df[tipo_arma] = (df[tipo_arma] * df['RoundStartingEquipmentValue']).astype(int)
+print("Partidas ganadas empezando como Terrorist:", partidas_ganadas_equipo1)
+print("Partidas ganadas empezando como CounterTerrorist:", partidas_ganadas_equipo2)
+print("Partidas empatadas:", partidas_empatadas)
 
 
-#Transformación de filas booleanas a 0 y 1
-df['MatchWinner'] = (df['MatchWinner']=="True").astype(int)
-df['RoundWinner'] = (df['RoundWinner']=="True").astype(int)
-df['Survived'] = (df['Survived']==True).astype(int)
+### Obtenemos los datos de las partidas donde se gana comenzando como terrorista y counter terrorist
+mapas = df['Map'].unique()
 
+for mapa in mapas:
+    partidas_ganadas_equipo1 = 0
+    partidas_ganadas_equipo2 = 0
+    partidas_empatadas = 0
 
-#Consideración de algunas columnas para trabajar sobre ellas,
-#además de cambio de nombre para mejor identificación
-columnas = ['Mapa','Equipo','NumInterno','NumPartida','NumRonda','KillsRonda','DineroIndividual','ValorAR', 'ValorSR','ValorPesado', 'ValorSMG', 'ValorPistola','DineroEquipo','GranadasLetales','GranadasNoLetales','Sobrevive','GanaRonda','GanaPartida']
-datos_considerar = df[['Map','Team','InternalTeamId','MatchId','RoundId','RoundKills','RoundStartingEquipmentValue','PrimaryAssaultRifle', 'PrimarySniperRifle','PrimaryHeavy', 'PrimarySMG', 'PrimaryPistol','TeamStartingEquipmentValue','RLethalGrenadesThrown','RNonLethalGrenadesThrown','Survived','RoundWinner','MatchWinner']].copy()
-datos_considerar.rename(columns=dict(zip(datos_considerar.columns, columnas)), inplace=True)
+    # Filtrar el df por el mapa
+    df_mapa = df[df['Map'] == mapa]
 
+    for partida in df_mapa['MatchId'].unique():
+        rondas = df_mapa[(df_mapa['MatchId'] == partida)]['RoundId'].unique()
+        equipo1_rondas_ganadas = len(df_mapa[(df_mapa['MatchId'] == partida) & (df_mapa['InternalTeamId'] == 1) & (df_mapa['RoundWinner'] == True)])
+        equipo2_rondas_ganadas = len(df_mapa[(df_mapa['MatchId'] == partida) & (df_mapa['InternalTeamId'] == 2) & (df_mapa['RoundWinner'] == True)])
 
+        if equipo1_rondas_ganadas > equipo2_rondas_ganadas:
+            partidas_ganadas_equipo1 += 1
+        elif equipo1_rondas_ganadas < equipo2_rondas_ganadas:
+            partidas_ganadas_equipo2 += 1
+        else:
+            partidas_empatadas += 1
 
-#Reemplazo de Mapa y Equipo por valores numéricos
-datos_considerar.Mapa.replace({"de_inferno":1, "de_nuke":2, "de_mirage":3, "de_dust2":4}, inplace=True)
-datos_considerar.Equipo.replace({"Terrorist":1, "CounterTerrorist":2}, inplace=True)
+    print("Mapa:", mapa)
+    print("Partidas ganadas empezando como Terroristas:", partidas_ganadas_equipo1)
+    print("Partidas ganadas empezando como CounterTerrorist:", partidas_ganadas_equipo2)
+    print("Partidas empatadas:", partidas_empatadas)
+    print()
 
+### Se obtienen los datos de rondas ganadas por equipo y mapa
+mapas = df['Map'].unique()
+total_rondas_ganadas_terrorist = []
+total_rondas_ganadas_counterterrorist = []
 
-#Dataframe  con datos a considerar para el modelo
-sin_bajos = pd.DataFrame()
+# Calcular el total de rondas ganadas por equipo por mapa
+for mapa in mapas:
+    df_mapa = df[df['Map'] == mapa]
+    total_rondas_ganadas_terrorist.append(df_mapa[df_mapa['Team'] == 'Terrorist']['RoundWinner'].sum())
+    total_rondas_ganadas_counterterrorist.append(df_mapa[df_mapa['Team'] == 'CounterTerrorist']['RoundWinner'].sum())
 
-sin_bajos['DineroEquipo'] = datos_considerar['DineroEquipo']
-sin_bajos['Partida'] = datos_considerar['NumPartida']
-sin_bajos['Ronda'] = datos_considerar['NumRonda']
-sin_bajos['Equipo'] = datos_considerar['NumInterno']
-sin_bajos['Granadas'] = (datos_considerar['GranadasLetales']+datos_considerar['GranadasNoLetales'])
-sin_bajos['Kills'] = datos_considerar['KillsRonda']
-sin_bajos['Ganada'] = datos_considerar['GanaPartida']
-sin_bajos['GanaRonda'] = datos_considerar['GanaRonda']
+x = np.arange(len(mapas))
+width = 0.35
 
-sin_bajos_ag = sin_bajos.groupby(['Partida','Ronda', 'Equipo']).agg({
-    'Partida':'first',
-    'DineroEquipo':'first',
-    'Ronda':'first',
-    'Equipo':'first',
-    'Granadas':'sum',
-    'Kills':'sum',
-    'GanaRonda':'first'
-})
+pickle_path = 'checkpoints/dataframe.pkl'
+df.to_pickle(pickle_path)
 
-pickle_path = 'checkpoints/sin_bajos_ag.pkl'
-sin_bajos_ag.to_pickle(pickle_path)

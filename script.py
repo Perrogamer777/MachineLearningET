@@ -1,58 +1,55 @@
-from flask import Flask, request, render_template
+from flask import Flask, render_template, request
 import pickle
-import numpy as np
+import pandas as pd
 
-app = Flask(__name__, template_folder='templates', static_url_path='/static')
+app = Flask(__name__)
 
-# Cargar el modelo y el scaler desde archivos pickle
-model_path = 'checkpoints/logistic_model.pkl'
-scaler_path = 'checkpoints/scaler.pkl'
+# Ruta de los archivos del modelo y las columnas
+model_path = 'checkpoints/tree_model.pkl'
+columns_path = 'checkpoints/columns.pkl'
 
+# Cargar el modelo
 with open(model_path, 'rb') as model_file:
-    logistic_model = pickle.load(model_file)
-    
-with open(scaler_path, 'rb') as scaler_file:
-    scaler = pickle.load(scaler_file)
+    model = pickle.load(model_file)
+
+# Cargar los nombres de las columnas
+with open(columns_path, 'rb') as columns_file:
+    columns = pickle.load(columns_file)
 
 @app.route('/')
-def home():
+def index():
     return render_template('index.html')
 
-@app.route('/result', methods=['POST'])
-def result():
-    try:
+@app.route('/predict', methods=['POST'])
+def predict():
+    if request.method == 'POST':
         # Obtener los datos del formulario
-        dinero_equipo = float(request.form['dinero_equipo']) if request.form['dinero_equipo'].strip() else None
-        granadas = float(request.form['granadas']) if request.form['granadas'].strip() else None
-        kills = float(request.form['kills']) if request.form['kills'].strip() else None
-        
-        # Validar que todos los campos estén completos
-        if dinero_equipo is None or granadas is None or kills is None:
-            return render_template('error.html', message='Todos los campos son obligatorios')
-        
-        # Crear el array de entrada
-        input_data = np.array([[dinero_equipo, granadas, kills]])
+        map_value = request.form['map']
+        team_value = request.form['team']
+        round_kills = int(request.form['round_kills'])
+        survived = int(request.form['survived'])
 
-        print(input_data)
-        
-        # Escalar los datos de entrada
-        input_data_scaled = scaler.transform(input_data)
-        
-        # Hacer la predicción
-        prediction = logistic_model.predict(input_data_scaled)
-        print(prediction)
-        
-        # Convertir la predicción a una respuesta legible
-        result = ''
-        if prediction[0] == 0:
-            result = 'ganar' 
-        else:
-            result = 'perder'
-        
-        return render_template('result.html', result=result)
-    
-    except ValueError as e:
-        return render_template('error.html', message='Error al procesar los datos: {}'.format(str(e)))
+        # Crear el DataFrame con los datos de entrada
+        input_data = {
+            'RoundKills': [round_kills],
+            'Survived': [survived],
+            f'Map_{map_value}': [1],
+            f'Team_{team_value}': [1]
+        }
+
+        # Completar las columnas faltantes con ceros
+        for col in columns:
+            if col not in input_data:
+                input_data[col] = [0]
+
+        # Convertir a DataFrame y ordenar las columnas
+        input_df = pd.DataFrame(input_data)
+        input_df = input_df[columns]
+
+        # Realizar la predicción
+        prediction = model.predict(input_df)[0]
+
+        return render_template('resultado.html', prediction=prediction)
 
 if __name__ == '__main__':
     app.run(debug=True)
